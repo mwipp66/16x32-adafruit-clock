@@ -5,16 +5,16 @@
 // [ ] should we create an array for spaces between chars?
 //
 
-
 #include "RGBmatrixPanel.h"
 #include "glcdfont.c"
 
 // DRM added these fonts
 #include "fontBig.c"
-//#include "fontEightBySix.c"   // this is really fontEightByFifteen
 #include "fontSixBySixteen.c" 
 #include "fontSevenByTwelve.c" 
 
+// I deleted this font
+//#include "fontEightBySix.c"   // this is really fontEightByFifteen
 
 // DRM
 // let's make a pointer to the font arrays.  Then we can just ref a diff font per variable
