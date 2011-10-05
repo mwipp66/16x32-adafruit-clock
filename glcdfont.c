@@ -5,6 +5,7 @@
 #define FONT5X7_H
 
 // standard ascii 5x7 font
+// this is the orig from adafruit
 
 static unsigned char  font[] PROGMEM = {
     0x00, 0x00, 0x00, 0x00, 0x00,   
