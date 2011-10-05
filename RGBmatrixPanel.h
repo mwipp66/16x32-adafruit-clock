@@ -44,9 +44,11 @@ class RGBmatrixPanel  : public Print {
   // Printing
   void setCursor(uint8_t x, uint8_t y);
   void setTextSize(uint8_t s);
+  void setTextFont(uint8_t f);
   void setTextColor(uint16_t c);
   void write(uint8_t c);
   void drawChar(uint8_t x, uint8_t y, char c, uint16_t color, uint8_t size);
+  void drawTallChar(uint8_t x, uint8_t y, char c, uint16_t color, uint8_t size);
 
   void updateDisplay();
   void dumpMatrix(void);
@@ -56,7 +58,7 @@ class RGBmatrixPanel  : public Print {
  private:
   uint8_t matrixbuff[NUMBYTES];  // 768 bytes for 16x32
 
-  uint8_t cursor_x, cursor_y, textsize;
+  uint8_t cursor_x, cursor_y, textsize, fontnum;
   uint16_t textcolor;
 
   volatile uint8_t pwmcounter;

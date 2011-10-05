@@ -1,5 +1,37 @@
+// TODO
+//
+//
+// [ ] Do we need to if size > 1 if we're in bigFont?
+// [ ] should we create an array for spaces between chars?
+//
+
+
 #include "RGBmatrixPanel.h"
 #include "glcdfont.c"
+
+// DRM added these fonts
+#include "fontBig.c"
+//#include "fontEightBySix.c"   // this is really fontEightByFifteen
+#include "fontSixBySixteen.c" 
+#include "fontSevenByTwelve.c" 
+
+
+// DRM
+// let's make a pointer to the font arrays.  Then we can just ref a diff font per variable
+// http://arduino.cc/en/Reference/PROGMEM
+// http://arduino.cc/forum/index.php/topic,74308.0.html
+
+PROGMEM static unsigned char * PROGMEM table_pointers[] = {
+  font,  
+  fontSixBySixteen,
+  fontSevenByTwelve,
+  fontBig  };
+
+
+// use the actual size of bits not visual size .. 
+
+int fontWidth[]  = {5,  6,  7, 15};
+int fontHeight[] = {7, 16, 12, 16};
 
 uint8_t RGBmatrixPanel::width() {return WIDTH; }
 
@@ -202,6 +234,16 @@ void RGBmatrixPanel::drawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h,
   drawLine(x+w-1, y, x+w-1, y+h-1, color);
 }
 
+// fill a rectangle
+void RGBmatrixPanel::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, 
+		      uint16_t color) {
+  for (uint8_t i=x; i<x+w; i++) {
+    for (uint8_t j=y; j<y+h; j++) {
+      drawPixel(i, j, color);
+    }
+  }
+}
+
 
 
 // draw a circle outline
@@ -286,56 +328,89 @@ void RGBmatrixPanel::setTextSize(uint8_t s) {
   textsize = s;
 }
 
+void RGBmatrixPanel::setTextFont(uint8_t f) {
+  fontnum = f;
+}
+
 void RGBmatrixPanel::setTextColor(uint16_t c) {
   textcolor = c;
 }
 
-void RGBmatrixPanel::write(uint8_t c) {
-  if (c == '\n') {
+void RGBmatrixPanel::write(uint8_t c) 
+{
+  if (c == '\n') 
+  {
     cursor_y += textsize*8;
     cursor_x = 0;
-  } else if (c == '\r') {
+  } 
+  else if (c == '\r')   {
     // skip em
-  } else {
+  } 
+  else if (fontnum > 0) 
+  {
+    //Serial.println("In Other Font");
+	drawTallChar(cursor_x, cursor_y, c, textcolor, textsize);
+    cursor_x += textsize*fontWidth[fontnum];
+  }
+  else 
+  {
     drawChar(cursor_x, cursor_y, c, textcolor, textsize);
-    cursor_x += textsize*6; // def of 6 DRM
+    cursor_x += textsize*6;
   }
 }
 
-
-// fill a rectangle
-void RGBmatrixPanel::fillRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t color) {
-  for (uint8_t i=x; i<x+w; i++) {
-    for (uint8_t j=y; j<y+h; j++) {
-      drawPixel(i, j, color);
+// draw a character
+void RGBmatrixPanel::drawChar(uint8_t x, uint8_t y, char c, 
+			      uint16_t color, uint8_t size) {
+  for (uint8_t i =0; i<5; i++ ) {
+    uint8_t line = pgm_read_byte(font+(c*5)+i);
+    for (uint8_t j = 0; j<8; j++) {
+      if (line & 0x1) {
+	if (size == 1) // default size
+	  drawPixel(x+i, y+j, color);
+	else {  // big size
+	  fillRect(x+i*size, y+j*size, size, size, color);
+	} 
+      }
+      line >>= 1;
     }
   }
 }
 
+void RGBmatrixPanel::drawTallChar(uint8_t x, uint8_t y, char c, uint16_t color, uint8_t size) {
 
-int myFontWidth=6; // def 5
-int myFontHeight=8;// def 8
+int myFontWidth=fontWidth[fontnum];
+int myFontHeight=fontHeight[fontnum];
 
-// draw a character
-void RGBmatrixPanel::drawChar(uint8_t x, uint8_t y, char c, uint16_t color, uint8_t size) {
+//Serial.print("fontSevenByTwelve Array Value: ");
+//Serial.println((int)fontSevenByTwelve[0]);
+
+//Serial.print("Using Width of: ");
+//Serial.println(myFontWidth);
+//Serial.print("Using heigth of: ");
+//Serial.println(myFontHeight);
+//
 
 //Serial.print("x: ");
 //Serial.println(x, DEC);
 //Serial.print("y: ");
 //Serial.println(y, DEC);
 
-y=y+8;
+// we draw the bottom of the character first
+//y=y+myFontHeight;
  
   for (uint8_t i =0; i<myFontWidth; i++ ) 
   {
     
-	// char c times the WIDTH of the font which is 12 + the loop i
-	uint8_t line = pgm_read_word(font+(c*12)+i);
-    
-	//Serial.print("My Line: ");
-	//Serial.println((int)line);
-    //delay(1000);
+	// char c times the WIDTH of the font record which is 12 + the loop i
+	//uint8_t line = pgm_read_byte(fontSevenByTwelve+(c*(myFontWidth*2))+i);
 	
+	PROGMEM unsigned char* ptr = (PROGMEM unsigned char*)pgm_read_word(&table_pointers[fontnum]);
+    uint8_t line = pgm_read_byte(ptr + (c*(myFontWidth*2))+i);
+    
+	//Serial.print("Value: ");
+    //Serial.println((int)line);
+		
 	for (uint8_t j = 0; j<myFontHeight; j++) 
 	{
       if (line & 0x1) 
@@ -346,23 +421,28 @@ y=y+8;
 			//Serial.println(j, DEC);
 			//delay(100);
 		}
-		else 
-		{  // big size
-			fillRect(x+i*size, y+j*size, size, size, color);
-		} 
+		//else 
+		//{  // big size
+		//	fillRect(x+i*size, y+j*size, size, size, color);
+		//} 
       }
       line >>= 1;
     }
   } 
-      
-  y=0;
-  //x=x+6;
+  
+  delay(100);
+  
+  // now let's go back up and draw the top piece of the char
+y=y-6;
 
   for (uint8_t i =0; i<myFontWidth; i++ ) 
   {
-    // same as above but we go forward 1 more record (of 6) for the other part of the font
-	uint8_t line = pgm_read_word(font+(c*12+6)+i);
+    // same as above but we go forward 1 more record (of myFontWidth) for the other part of the font
+	//uint8_t line = pgm_read_word(fontSevenByTwelve+(c*(myFontWidth*2)+myFontWidth)+i);
     
+	PROGMEM unsigned char* ptr = (PROGMEM unsigned char*)pgm_read_word(&table_pointers[fontnum]);
+    uint8_t line = pgm_read_byte(ptr + (c*(myFontWidth*2)+myFontWidth)+i);
+		
 	//Serial.print("My Line: ");
 	//Serial.println((int)line);
     //delay(1000);
@@ -377,15 +457,16 @@ y=y+8;
 			//Serial.println(j, DEC);
 			//delay(100);
 		}
-		else 
-		{  // big size
-			fillRect(x+i*size, y+j*size, size, size, color);
-		} 
+		//else 
+		//{  // big size
+		//	fillRect(x+i*size, y+j*size, size, size, color);
+		//} 
       }
       line >>= 1;
     }
   }  
 }
+
 
 void  RGBmatrixPanel::updateDisplay(void) {
   writeSection(scansection, matrixbuff + (3*32*scansection));  
