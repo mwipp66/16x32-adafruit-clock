@@ -1,7 +1,7 @@
 // TODO
 //
 //
-// [ ] Do we need to if size > 1 if we're in bigFont?
+// [x] Do we need to if size > 1 if we're in bigFont?
 // [ ] should we create an array for spaces between chars?
 //
 
@@ -30,8 +30,11 @@ PROGMEM static unsigned char * PROGMEM table_pointers[] = {
 
 // use the actual size of bits not visual size .. 
 
-int fontWidth[]  = {5,  6,  7, 15};
-int fontHeight[] = {7, 16, 12, 16};
+int fontWidth[]    = {5,  6,  7, 15};
+int fontHeight[]   = {7, 16, 16, 16};
+
+// 7of16 needs a Y offset of -4ish to be near top.  Must be blanks at top (my guess)
+
 
 uint8_t RGBmatrixPanel::width() {return WIDTH; }
 
@@ -350,7 +353,7 @@ void RGBmatrixPanel::write(uint8_t c)
   {
     //Serial.println("In Other Font");
 	drawTallChar(cursor_x, cursor_y, c, textcolor, textsize);
-    cursor_x += textsize*fontWidth[fontnum];
+    cursor_x += textsize*fontWidth[fontnum] + 1;  // <--- this 1 should be a var of extra char spacing
   }
   else 
   {
@@ -382,22 +385,27 @@ void RGBmatrixPanel::drawTallChar(uint8_t x, uint8_t y, char c, uint16_t color, 
 int myFontWidth=fontWidth[fontnum];
 int myFontHeight=fontHeight[fontnum];
 
+//y=y-4;
+
+int orig_y = y;
+
 //Serial.print("fontSevenByTwelve Array Value: ");
 //Serial.println((int)fontSevenByTwelve[0]);
-
 //Serial.print("Using Width of: ");
 //Serial.println(myFontWidth);
 //Serial.print("Using heigth of: ");
 //Serial.println(myFontHeight);
-//
-
 //Serial.print("x: ");
 //Serial.println(x, DEC);
 //Serial.print("y: ");
 //Serial.println(y, DEC);
 
 // we draw the bottom of the character first
-//y=y+myFontHeight;
+// then we draw the dots down
+y=y+myFontHeight/2;
+
+Serial.print("NEW y: ");
+Serial.println(y, DEC);
  
   for (uint8_t i =0; i<myFontWidth; i++ ) 
   {
@@ -430,10 +438,13 @@ int myFontHeight=fontHeight[fontnum];
     }
   } 
   
-  delay(100);
-  
   // now let's go back up and draw the top piece of the char
-y=y-6;
+  // and draw the dots down
+  
+y=orig_y;
+
+Serial.print("NEW2 y: ");
+Serial.println(y, DEC);
 
   for (uint8_t i =0; i<myFontWidth; i++ ) 
   {
@@ -453,7 +464,7 @@ y=y-6;
 	  {
 		if (size == 1) // default size
 		{
-			drawPixel(x+i, y+j, color);	
+			drawPixel(x+i, y+j, color-100);	
 			//Serial.println(j, DEC);
 			//delay(100);
 		}
